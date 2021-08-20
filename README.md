@@ -6,9 +6,24 @@
 [![tests](https://github.com/haesleinhuepf/napari-plot-profile/workflows/tests/badge.svg)](https://github.com/haesleinhuepf/napari-plot-profile/actions)
 [![codecov](https://codecov.io/gh/haesleinhuepf/napari-plot-profile/branch/master/graph/badge.svg)](https://codecov.io/gh/haesleinhuepf/napari-plot-profile)
 
-Plot intensity along a line in napari
+Plot the intensities a long a line in napari.
 
-![img.png](docs/plot_profile_screenshot.png)
+## Usage
+
+* Open some images and add a shapes layer.
+
+![img.png](https://github.com/haesleinhuepf/napari-plot-profile/raw/main/docs/add_shapes_layer_screenshot.png)
+  
+* Activate the line drawing tool or the path tool and draw a line.
+
+![img.png](https://github.com/haesleinhuepf/napari-plot-profile/raw/main/docs/draw_line_tool_screenshot.png)
+  
+* After drawing a line, click on the menu Plugins > Measurements (Plot Profile)
+* If you modify the line, you may want to click the "Refresh" button to redraw the profile.
+
+![img.png](https://github.com/haesleinhuepf/napari-plot-profile/raw/main/docs/redraw_screenshot.png)
+
+To see how these steps can be done programmatically from python, check out the [demo notebook](https://github.com/haesleinhuepf/napari-plot-profile/blob/main/docs/demo.ipynb)
 
 ----------------------------------
 
