@@ -68,5 +68,5 @@ If you encounter any problems, please create a thread on [image.sc] along with a
 [tox]: https://tox.readthedocs.io/en/latest/
 [pip]: https://pypi.org/project/pip/
 [PyPI]: https://pypi.org/
-
+[image.sc]: https://image.sc
 [@haesleinhuepf]: https://twitter.com/haesleinhuepf
