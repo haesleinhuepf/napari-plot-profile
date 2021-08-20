@@ -6,7 +6,7 @@
 [![tests](https://github.com/haesleinhuepf/napari-plot-profile/workflows/tests/badge.svg)](https://github.com/haesleinhuepf/napari-plot-profile/actions)
 [![codecov](https://codecov.io/gh/haesleinhuepf/napari-plot-profile/branch/master/graph/badge.svg)](https://codecov.io/gh/haesleinhuepf/napari-plot-profile)
 
-Plot the intensities a long a line in [napari].
+Plot the intensities along a line in [napari].
 
 ## Usage
 
