@@ -66,12 +66,12 @@ class PlotProfile(QWidget):
     def _list_values(self):
         table = {}
         for my_profile in self.data:
+            positions = np.asarray(my_profile['positions'])
+            for i, x in enumerate(positions[0]):
+                table[my_profile['name'] + '_pos' + str(i)] = positions[:, i]
 
-            for i, x in enumerate(my_profile['position']):
-                table[my_profile['name'] + 'x' + str(i)] = x
-
-            table[my_profile['name'] + 'intensity'] = my_profile['intensities']
-            table[my_profile['name'] + 'distance'] = my_profile['distances']
+            table[my_profile['name'] + '_intensity'] = my_profile['intensities']
+            table[my_profile['name'] + '_distance'] = my_profile['distances']
 
         # turn table into a widget
         dock_widget = table_to_widget(table)
@@ -86,7 +86,7 @@ class PlotProfile(QWidget):
             if isinstance(layer, napari.layers.Shapes):
                 if len(layer._data_view.shapes) > 0:
                     line = layer._data_view.shapes[-1].data
-                    print(line)
+
                 if line is None:
                     line = layer.data[-1]
                 break
