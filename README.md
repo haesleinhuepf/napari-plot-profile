@@ -6,11 +6,13 @@
 [![tests](https://github.com/haesleinhuepf/napari-plot-profile/workflows/tests/badge.svg)](https://github.com/haesleinhuepf/napari-plot-profile/actions)
 [![codecov](https://codecov.io/gh/haesleinhuepf/napari-plot-profile/branch/master/graph/badge.svg)](https://codecov.io/gh/haesleinhuepf/napari-plot-profile)
 
-Plot the intensities a long a line in napari.
+Plot the intensities a long a line in [napari].
 
 ## Usage
 
-* Open some images and add a shapes layer.
+* Open some images in [napari].
+  
+* Add a shapes layer.
 
 ![img.png](https://github.com/haesleinhuepf/napari-plot-profile/raw/main/docs/add_shapes_layer_screenshot.png)
   
