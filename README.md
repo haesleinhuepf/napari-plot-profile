@@ -1,6 +1,6 @@
 # napari-plot-profile
 
-[![License](https://img.shields.io/pypi/l/napari-plot-profile.svg?color=green)](https://github.com/haesleinhuepf/napari-plot-profile/raw/master/LICENSE)
+[![License](https://img.shields.io/pypi/l/napari-plot-profile.svg?color=green)](https://github.com/haesleinhuepf/napari-plot-profile/raw/main/LICENSE)
 [![PyPI](https://img.shields.io/pypi/v/napari-plot-profile.svg?color=green)](https://pypi.org/project/napari-plot-profile)
 [![Python Version](https://img.shields.io/pypi/pyversions/napari-plot-profile.svg?color=green)](https://python.org)
 [![tests](https://github.com/haesleinhuepf/napari-plot-profile/workflows/tests/badge.svg)](https://github.com/haesleinhuepf/napari-plot-profile/actions)
