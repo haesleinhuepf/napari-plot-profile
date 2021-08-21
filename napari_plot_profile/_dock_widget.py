@@ -6,7 +6,6 @@ from napari_plugin_engine import napari_hook_implementation
 from qtpy.QtWidgets import QWidget, QHBoxLayout, QVBoxLayout, QPushButton, QLabel, QSpinBox, QCheckBox
 from qtpy.QtWidgets import QTableWidget, QTableWidgetItem, QWidget, QGridLayout, QPushButton, QFileDialog
 from qtpy.QtCore import Qt
-from superqt import QRangeSlider
 from magicgui.widgets import Table
 from napari._qt.qthreading import thread_worker
 
@@ -121,11 +120,7 @@ class PlotProfile(QWidget):
         line = None
         for layer in self.viewer.layers.selection:
             if isinstance(layer, napari.layers.Shapes):
-                if len(layer._data_view.shapes) > 0:
-                    line = layer._data_view.shapes[-1].data
-
-                if line is None:
-                    line = layer.data[-1]
+                line = layer.data[-1]
                 break
         return line
 
@@ -144,8 +139,7 @@ class PlotProfile(QWidget):
 
         self._reset_plot()
 
-        self.former_line = line
-
+        self.former_line = line + 0
 
         # clean up
         layout = self.labels.layout()
@@ -174,6 +168,7 @@ class PlotProfile(QWidget):
 
             row = LayerLabelWidget(layer, text, colors[i], self)
             layout.addWidget(row)
+
 
     def _reset_plot(self):
         if not hasattr(self, "p2"):
