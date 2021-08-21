@@ -120,8 +120,11 @@ class PlotProfile(QWidget):
         line = None
         for layer in self.viewer.layers.selection:
             if isinstance(layer, napari.layers.Shapes):
-                line = layer.data[-1]
-                break
+                try:
+                    line = layer.data[-1]
+                    break
+                except IndexError:
+                    pass
         return line
 
     def redraw(self, force_redraw : bool = False):
