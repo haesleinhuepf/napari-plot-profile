@@ -3,11 +3,12 @@ import warnings
 
 from qtpy.QtWidgets import QSpacerItem, QSizePolicy
 from napari_plugin_engine import napari_hook_implementation
-from qtpy.QtWidgets import QWidget, QHBoxLayout, QVBoxLayout, QPushButton, QLabel, QSpinBox
+from qtpy.QtWidgets import QWidget, QHBoxLayout, QVBoxLayout, QPushButton, QLabel, QSpinBox, QCheckBox
 from qtpy.QtWidgets import QTableWidget, QTableWidgetItem, QWidget, QGridLayout, QPushButton, QFileDialog
 from qtpy.QtCore import Qt
 from superqt import QRangeSlider
 from magicgui.widgets import Table
+from napari._qt.qthreading import thread_worker
 
 import pyqtgraph as pg
 import numpy as np
@@ -27,6 +28,7 @@ class PlotProfile(QWidget):
         # histogram view
         self.graphics_widget = pg.GraphicsLayoutWidget()
         self.graphics_widget.setBackground(None)
+
         #graph_container.setMaximumHeight(100)
         graph_container.setLayout(QHBoxLayout())
         graph_container.layout().addWidget(self.graphics_widget)
@@ -42,9 +44,27 @@ class PlotProfile(QWidget):
         self.layout().addWidget(graph_container)
         self.layout().addWidget(self.labels)
 
+        num_points_container = QWidget()
+        num_points_container.setLayout(QHBoxLayout())
+
+        lbl = QLabel("Number of points")
+        num_points_container.layout().addWidget(lbl)
+        self.sp_num_points = QSpinBox()
+        self.sp_num_points.setMinimum(2)
+        self.sp_num_points.setMaximum(10000000)
+        self.sp_num_points.setValue(100)
+        num_points_container.layout().addWidget(self.sp_num_points)
+        num_points_container.layout().setSpacing(0)
+        self.layout().addWidget(num_points_container)
+
+
         btn_refresh = QPushButton("Refresh")
         btn_refresh.clicked.connect(self._on_selection)
         self.layout().addWidget(btn_refresh)
+
+        self.cb_live_update = QCheckBox("Live update")
+        self.cb_live_update.setChecked(True)
+        self.layout().addWidget(self.cb_live_update)
 
         btn_list_values = QPushButton("List values")
         btn_list_values.clicked.connect(self._list_values)
@@ -54,14 +74,32 @@ class PlotProfile(QWidget):
         self.layout().addItem(verticalSpacer)
         # self.layout().setSpacing(0)
 
+        # we're using a thread worker because layer.mouse_drag_callbacks doesn't work
+        # as expected in napari 0.4.10.
+        # Todo: check later if the thread_worker can be replaced with a mouse/move/drag event
+        # https://napari.org/guides/stable/threading.html
+        @thread_worker
+        def loop_run():
+            while True:  # endless loop
+                time.sleep(0.5)
+                yield True
+
+        worker = loop_run()
+
+        def update_layer(whatever):
+            if self.cb_live_update.isChecked():
+                self.redraw()
+            if not self.isVisible():
+                worker.quit()
+
+        # Start the loop
+        worker.yielded.connect(update_layer)
+        worker.start()
         self.redraw()
 
     def _on_selection(self, event):
         # redraw when layer selection has changed
         self.redraw(force_redraw=True)
-
-    def _data_changed_event(self, event, more=None):
-        self.redraw()
 
     def _list_values(self):
         table = {}
@@ -79,8 +117,7 @@ class PlotProfile(QWidget):
         # add widget to napari
         self.viewer.window.add_dock_widget(dock_widget, area='right')
 
-    def redraw(self, force_redraw : bool = False):
-
+    def _get_current_line(self):
         line = None
         for layer in self.viewer.layers.selection:
             if isinstance(layer, napari.layers.Shapes):
@@ -90,10 +127,16 @@ class PlotProfile(QWidget):
                 if line is None:
                     line = layer.data[-1]
                 break
+        return line
+
+    def redraw(self, force_redraw : bool = False):
+
+        line = self._get_current_line()
 
         if line is None:
             self._reset_plot()
             return
+
 
         if not force_redraw:
             if self.former_line is not None and np.array_equal(line, self.former_line):
@@ -110,7 +153,7 @@ class PlotProfile(QWidget):
             layout.itemAt(i).widget().setParent(None)
 
         # visualize plots
-        num_bins = 50
+        num_bins = self.sp_num_points.value()
         colors = []
         self.data = []
         for i, layer in enumerate(self.selected_image_layers()):
@@ -132,20 +175,13 @@ class PlotProfile(QWidget):
             row = LayerLabelWidget(layer, text, colors[i], self)
             layout.addWidget(row)
 
-        # patch events # doesn't work at the moment... that's why we use the button above
-        #selected_layers = self.selected_image_layers()
-        #for layer in self.viewer.layers:
-        #    layer.events.data.disconnect(self._data_changed_event)
-        #    if self._data_changed_event in layer.mouse_move_callbacks:
-        #        layer.mouse_move_callbacks.remove(self._data_changed_event)
-        #
-        #    if layer in self.viewer.layers.selection and isinstance(layer, napari.layers.Shapes):
-        #        layer.events.data.connect(self._data_changed_event)
-        #        layer.mouse_move_callbacks.append(self._data_changed_event)
-
     def _reset_plot(self):
         if not hasattr(self, "p2"):
             self.p2 = self.graphics_widget.addPlot()
+            axis = self.p2.getAxis('bottom')
+            axis.setLabel("Distance")
+            axis = self.p2.getAxis('left')
+            axis.setLabel("Intensity")
         else:
             self.p2.clear()
 
@@ -187,8 +223,11 @@ def profile(layer, line, num_points : int = 256):
 
 
         position_on_line = distance - intermediate_distances[current_line]
-        line_length = intermediate_distances[current_line + 1] - intermediate_distances[current_line]
-        relative_position = position_on_line / line_length
+        if current_line == len(intermediate_distances)-1:
+            relative_position = 0
+        else:
+            line_length = intermediate_distances[current_line + 1] - intermediate_distances[current_line]
+            relative_position = position_on_line / line_length
         position = start * relative_position + end * (1.0 - relative_position)
         positions.append(position.astype(int))
 
