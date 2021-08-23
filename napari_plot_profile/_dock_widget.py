@@ -120,6 +120,10 @@ class PlotProfile(QWidget):
         line = None
         for layer in self.viewer.layers.selection:
             if isinstance(layer, napari.layers.Shapes):
+                selection = list(layer.selected_data)
+                if len(selection) > 0:
+                    line = layer.data[selection[0]]
+                    break
                 try:
                     line = layer.data[-1]
                     break
