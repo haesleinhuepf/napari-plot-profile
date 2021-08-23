@@ -132,7 +132,7 @@ class PlotProfile(QWidget):
         line = self._get_current_line()
 
         if line is None:
-            self._reset_plot()
+            #self._reset_plot()
             return
 
 
