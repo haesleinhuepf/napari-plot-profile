@@ -214,6 +214,7 @@ def profile(layer, line, num_points : int = 256):
     step = distance / (num_points - 1)
 
     positions = []
+    distances = []
 
     current_line = 0
     for i in range(num_points):
@@ -231,13 +232,20 @@ def profile(layer, line, num_points : int = 256):
             line_length = intermediate_distances[current_line + 1] - intermediate_distances[current_line]
             relative_position = position_on_line / line_length
         position = start * relative_position + end * (1.0 - relative_position)
-        positions.append(position.astype(int))
+
+        # check if point still within image
+        position_clipped = np.maximum(position, np.zeros(position.shape))
+        position_clipped = np.minimum(position_clipped, layer.data.shape - np.ones(position.shape))
+        if np.array_equal(position, position_clipped):
+            position = position.astype(int)
+            positions.append(position)
+            distances.append(i * step)
 
     intensities = [layer.data[tuple(position)] for position in positions]
 
     return {
         'positions': positions,
-        'distances': [i * step for i in range(num_points)],
+        'distances': distances,
         'intensities': intensities
     }
 
