@@ -8,6 +8,7 @@ from qtpy.QtWidgets import QTableWidget, QTableWidgetItem, QWidget, QGridLayout,
 from qtpy.QtCore import Qt
 from magicgui.widgets import Table
 from napari._qt.qthreading import thread_worker
+from qtpy.QtCore import QTimer
 
 import pyqtgraph as pg
 import numpy as np
@@ -77,23 +78,36 @@ class PlotProfile(QWidget):
         # as expected in napari 0.4.10.
         # Todo: check later if the thread_worker can be replaced with a mouse/move/drag event
         # https://napari.org/guides/stable/threading.html
-        @thread_worker
-        def loop_run():
-            while True:  # endless loop
-                time.sleep(0.5)
-                yield True
+        #@thread_worker
+        #def loop_run():
+        #    while True:  # endless loop
+        #        time.sleep(0.5)
+        #        yield True
 
-        worker = loop_run()
+        #worker = loop_run()
 
-        def update_layer(whatever):
+        #def update_layer(whatever):
+        #    if self.cb_live_update.isChecked():
+        #        self.redraw()
+        #    if not self.isVisible():
+        #        worker.quit()
+
+        # Start the loop
+        #worker.yielded.connect(update_layer)
+        #worker.start()
+
+        self.timer = QTimer()
+        self.timer.setInterval(500)
+
+        @self.timer.timeout.connect
+        def update_layer(*_):
             if self.cb_live_update.isChecked():
                 self.redraw()
             if not self.isVisible():
-                worker.quit()
+                self.timer.stop()
 
-        # Start the loop
-        worker.yielded.connect(update_layer)
-        worker.start()
+        self.timer.start()
+
         self.redraw()
 
     def _on_selection(self, event):
