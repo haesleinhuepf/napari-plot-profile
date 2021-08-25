@@ -231,7 +231,7 @@ def profile(layer, line, num_points : int = 256):
         else:
             line_length = intermediate_distances[current_line + 1] - intermediate_distances[current_line]
             relative_position = position_on_line / line_length
-        position = start * relative_position + end * (1.0 - relative_position)
+        position = end * relative_position + start * (1.0 - relative_position)
 
         # check if point still within image
         position_clipped = np.maximum(position, np.zeros(position.shape))
