@@ -168,13 +168,13 @@ class PlotProfile(QWidget):
             colors.append(color)
 
             intensities = my_profile['intensities']
+            if len(intensities) > 0:
+                self.p2.plot(my_profile['distances'], intensities, pen=color, name=layer.name)
 
-            self.p2.plot(my_profile['distances'], intensities, pen=color, name=layer.name)
+                text = '[%0.2f .. %0.2f], %0.2f +- %0.2f' % (np.min(intensities),np.max(intensities),np.mean(intensities),np.std(intensities))
 
-            text = '[%0.2f .. %0.2f], %0.2f +- %0.2f' % (np.min(intensities),np.max(intensities),np.mean(intensities),np.std(intensities))
-
-            row = LayerLabelWidget(layer, text, colors[i], self)
-            layout.addWidget(row)
+                row = LayerLabelWidget(layer, text, colors[i], self)
+                layout.addWidget(row)
 
 
     def _reset_plot(self):
