@@ -96,21 +96,33 @@ class PlotProfile(QWidget):
         #worker.yielded.connect(update_layer)
         #worker.start()
 
-        self.timer = QTimer()
-        self.timer.setInterval(500)
+        #self.timer = QTimer()
+        #self.timer.setInterval(500)
 
-        @self.timer.timeout.connect
-        def update_layer(*_):
-            if self.cb_live_update.isChecked():
-                self.redraw()
-            if not self.isVisible():
-                self.timer.stop()
+        #@self.timer.timeout.connect
+        #def update_layer(*_):
+        #    if self.cb_live_update.isChecked():
+        #        self.redraw()
+        #    if not self.isVisible():
+        #        self.timer.stop()
 
-        self.timer.start()
+        #self.timer.start()
 
-        self.redraw()
+        self._on_selection()
 
-    def _on_selection(self, event):
+    def _on_selection(self, event=None):
+        # patch events # doesn't work at the moment...
+        for layer in self.viewer.layers:
+            layer.events.data.disconnect(self._data_changed_event)
+            if self._data_changed_event in layer.mouse_drag_callbacks:
+                layer.mouse_drag_callbacks.remove(self._data_changed_event)
+
+            print("Checking", layer)
+            if layer in self.viewer.layers.selection and isinstance(layer, napari.layers.Shapes):
+                print("adding event")
+                layer.events.data.connect(self._data_changed_event)
+                layer.mouse_drag_callbacks.append(self._data_changed_event)
+
         # redraw when layer selection has changed
         self.redraw(force_redraw=True)
 
@@ -189,6 +201,13 @@ class PlotProfile(QWidget):
 
                 row = LayerLabelWidget(layer, text, colors[i], self)
                 layout.addWidget(row)
+
+    def _data_changed_event(self, shapes_layer, event):
+        yield
+        while event.type == 'mouse_move':
+            print("Drag", time.time())
+            self.redraw()
+            yield
 
 
     def _reset_plot(self):
