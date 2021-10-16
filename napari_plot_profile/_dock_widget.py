@@ -255,7 +255,11 @@ def profile(layer, line, num_points : int = 256):
             positions.append(position)
             distances.append(i * step)
 
-    intensities = [layer.data[tuple(position)] for position in positions]
+    data = layer.data
+    if "dask" in str(type(data)):
+        data = np.asarray(data)
+
+    intensities = [data[tuple(position)] for position in positions]
 
     return {
         'positions': positions,
