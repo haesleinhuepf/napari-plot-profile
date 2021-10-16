@@ -13,7 +13,9 @@ from qtpy.QtCore import QTimer
 import pyqtgraph as pg
 import numpy as np
 import napari
+from napari_tools_menu import register_dock_widget
 
+@register_dock_widget(menu="Measurement > Plot profile")
 class PlotProfile(QWidget):
     def __init__(self, napari_viewer):
         super().__init__()
