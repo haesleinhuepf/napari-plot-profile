@@ -116,7 +116,8 @@ class PlotProfile(QWidget):
         # redraw when layer selection has changed
         self.redraw(force_redraw=True)
 
-    def _list_values(self):
+
+    def to_table(self):
         table = {}
         for my_profile in self.data:
             positions = np.asarray(my_profile['positions'])
@@ -125,6 +126,10 @@ class PlotProfile(QWidget):
 
             table[my_profile['name'] + '_intensity'] = my_profile['intensities']
             table[my_profile['name'] + '_distance'] = my_profile['distances']
+        return table
+
+    def _list_values(self):
+        table = self.to_table()
 
         # turn table into a widget
         first_selected_layer = self.selected_image_layers()[0]
