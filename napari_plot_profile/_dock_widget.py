@@ -127,10 +127,10 @@ class PlotProfile(QWidget):
             table[my_profile['name'] + '_distance'] = my_profile['distances']
 
         # turn table into a widget
-        dock_widget = table_to_widget(table)
-
-        # add widget to napari
-        self.viewer.window.add_dock_widget(dock_widget, area='right')
+        first_selected_layer = self.selected_image_layers()[0]
+        first_selected_layer.properties = table
+        from napari_skimage_regionprops import add_table
+        add_table(first_selected_layer, self.viewer)
 
     def _get_current_line(self):
         line = None
@@ -268,36 +268,6 @@ def profile(layer, line, num_points : int = 256):
         'distances': distances,
         'intensities': intensities
     }
-
-# copied from napari-skimage-regionprops
-def table_to_widget(table: dict) -> QWidget:
-    """
-    Takes a table given as dictionary with strings as keys and numeric arrays as values and returns a QWidget which
-    contains a QTableWidget with that data.
-    """
-    view = Table(value=table)
-
-    copy_button = QPushButton("Copy to clipboard")
-
-    @copy_button.clicked.connect
-    def copy_trigger():
-        view.to_dataframe().to_clipboard()
-
-    save_button = QPushButton("Save as csv...")
-
-    @save_button.clicked.connect
-    def save_trigger():
-        filename, _ = QFileDialog.getSaveFileName(save_button, "Save as csv...", ".", "*.csv")
-        view.to_dataframe().to_csv(filename)
-
-    widget = QWidget()
-    widget.setWindowTitle("region properties")
-    widget.setLayout(QGridLayout())
-    widget.layout().addWidget(copy_button)
-    widget.layout().addWidget(save_button)
-    widget.layout().addWidget(view.native)
-
-    return widget
 
 def min_max(data):
     return data.min(), data.max()
