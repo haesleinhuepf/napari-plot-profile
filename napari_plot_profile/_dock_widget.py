@@ -19,43 +19,43 @@ from napari_tools_menu import register_dock_widget
 class PlotProfile(QWidget):
     def __init__(self, napari_viewer):
         super().__init__()
-        self.viewer = napari_viewer
+        self._viewer = napari_viewer
         napari_viewer.layers.selection.events.changed.connect(self._on_selection)
 
-        self.data = None
-        self.former_line = None
+        self._data = None
+        self._former_line = None
 
         graph_container = QWidget()
 
         # histogram view
-        self.graphics_widget = pg.GraphicsLayoutWidget()
-        self.graphics_widget.setBackground(None)
+        self._graphics_widget = pg.GraphicsLayoutWidget()
+        self._graphics_widget.setBackground(None)
 
         #graph_container.setMaximumHeight(100)
         graph_container.setLayout(QHBoxLayout())
-        graph_container.layout().addWidget(self.graphics_widget)
+        graph_container.layout().addWidget(self._graphics_widget)
 
         # individual layers: legend
-        self.labels = QWidget()
-        self.labels.setLayout(QVBoxLayout())
-        self.labels.layout().setSpacing(0)
+        self._labels = QWidget()
+        self._labels.setLayout(QVBoxLayout())
+        self._labels.layout().setSpacing(0)
 
         # setup layout
         self.setLayout(QVBoxLayout())
 
         self.layout().addWidget(graph_container)
-        self.layout().addWidget(self.labels)
+        self.layout().addWidget(self._labels)
 
         num_points_container = QWidget()
         num_points_container.setLayout(QHBoxLayout())
 
         lbl = QLabel("Number of points")
         num_points_container.layout().addWidget(lbl)
-        self.sp_num_points = QSpinBox()
-        self.sp_num_points.setMinimum(2)
-        self.sp_num_points.setMaximum(10000000)
-        self.sp_num_points.setValue(100)
-        num_points_container.layout().addWidget(self.sp_num_points)
+        self._sp_num_points = QSpinBox()
+        self._sp_num_points.setMinimum(2)
+        self._sp_num_points.setMaximum(10000000)
+        self._sp_num_points.setValue(100)
+        num_points_container.layout().addWidget(self._sp_num_points)
         num_points_container.layout().setSpacing(0)
         self.layout().addWidget(num_points_container)
 
@@ -64,9 +64,9 @@ class PlotProfile(QWidget):
         btn_refresh.clicked.connect(self._on_selection)
         self.layout().addWidget(btn_refresh)
 
-        self.cb_live_update = QCheckBox("Live update")
-        self.cb_live_update.setChecked(True)
-        self.layout().addWidget(self.cb_live_update)
+        self._cb_live_update = QCheckBox("Live update")
+        self._cb_live_update.setChecked(True)
+        self.layout().addWidget(self._cb_live_update)
 
         btn_list_values = QPushButton("List values")
         btn_list_values.clicked.connect(self._list_values)
@@ -98,19 +98,24 @@ class PlotProfile(QWidget):
         #worker.yielded.connect(update_layer)
         #worker.start()
 
-        self.timer = QTimer()
-        self.timer.setInterval(500)
+        self._timer = QTimer()
+        self._timer.setInterval(500)
 
-        @self.timer.timeout.connect
+        @self._timer.timeout.connect
         def update_layer(*_):
-            if self.cb_live_update.isChecked():
+            if self._cb_live_update.isChecked():
                 self.redraw()
             if not self.isVisible():
-                self.timer.stop()
+                self._timer.stop()
 
-        self.timer.start()
+        self._timer.start()
 
         self.redraw()
+
+    @property
+    def data(self):
+        warnings.warn("PlotProfile().data is deprecated. Use PlotProfile().to_table() instead.", DeprecationWarning)
+        return self._data
 
     def _on_selection(self, event):
         # redraw when layer selection has changed
@@ -119,7 +124,7 @@ class PlotProfile(QWidget):
 
     def to_table(self):
         table = {}
-        for my_profile in self.data:
+        for my_profile in self._data:
             positions = np.asarray(my_profile['positions'])
             for i, x in enumerate(positions[0]):
                 table[my_profile['name'] + '_pos' + str(i)] = positions[:, i]
@@ -135,11 +140,11 @@ class PlotProfile(QWidget):
         first_selected_layer = self.selected_image_layers()[0]
         first_selected_layer.properties = table
         from napari_skimage_regionprops import add_table
-        add_table(first_selected_layer, self.viewer)
+        add_table(first_selected_layer, self._viewer)
 
     def _get_current_line(self):
         line = None
-        for layer in self.viewer.layers.selection:
+        for layer in self._viewer.layers.selection:
             if isinstance(layer, napari.layers.Shapes):
                 selection = list(layer.selected_data)
                 if len(selection) > 0:
@@ -162,27 +167,27 @@ class PlotProfile(QWidget):
 
 
         if not force_redraw:
-            if self.former_line is not None and np.array_equal(line, self.former_line):
+            if self._former_line is not None and np.array_equal(line, self._former_line):
                 return
 
         self._reset_plot()
 
-        self.former_line = line + 0
+        self._former_line = line + 0
 
         # clean up
-        layout = self.labels.layout()
+        layout = self._labels.layout()
         for i in reversed(range(layout.count())):
             layout.itemAt(i).widget().setParent(None)
 
         # visualize plots
-        num_bins = self.sp_num_points.value()
+        num_bins = self._sp_num_points.value()
         colors = []
-        self.data = []
+        self._data = []
         for i, layer in enumerate(self.selected_image_layers()):
             # plot profile
             my_profile = profile(layer, line, num_points=num_bins)
             my_profile['name'] = layer.name
-            self.data.append(my_profile)
+            self._data.append(my_profile)
 
             colormap = layer.colormap.colors
             color = np.asarray(colormap[-1, 0:3]) * 255
@@ -200,7 +205,7 @@ class PlotProfile(QWidget):
 
     def _reset_plot(self):
         if not hasattr(self, "p2"):
-            self.p2 = self.graphics_widget.addPlot()
+            self.p2 = self._graphics_widget.addPlot()
             axis = self.p2.getAxis('bottom')
             axis.setLabel("Distance")
             axis = self.p2.getAxis('left')
@@ -209,7 +214,7 @@ class PlotProfile(QWidget):
             self.p2.clear()
 
     def selected_image_layers(self):
-        return [layer for layer in self.viewer.layers if (isinstance(layer, napari.layers.Image) and layer.visible)]
+        return [layer for layer in self._viewer.layers if (isinstance(layer, napari.layers.Image) and layer.visible)]
 
 class LayerLabelWidget(QWidget):
     def __init__(self, layer, text, color, gui):
