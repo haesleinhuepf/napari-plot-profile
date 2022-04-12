@@ -8,6 +8,8 @@
 [![Development Status](https://img.shields.io/pypi/status/napari-plot-profile.svg)](https://en.wikipedia.org/wiki/Software_release_life_cycle#Alpha)
 [![napari hub](https://img.shields.io/endpoint?url=https://api.napari-hub.org/shields/napari-plot-profile)](https://napari-hub.org/plugins/napari-plot-profile)
 
+## Plot a Line Profile
+
 Plot intensities along a line in [napari].
 
 ![img.png](https://github.com/haesleinhuepf/napari-plot-profile/raw/main/docs/napari-plot-profile-screencast.gif)
@@ -32,6 +34,12 @@ Plot intensities along a line in [napari].
 To see how these steps can be done programmatically from python, check out the [demo notebook](https://github.com/haesleinhuepf/napari-plot-profile/blob/main/docs/demo.ipynb)
 
 ----------------------------------
+
+## Create a Topographical View
+
+Create a 3D view of a 2D image by warping pixel intensities to heights. It can be displayed as a 3D image layer, a points cloud layer or a surface layer.
+
+![](https://github.com/haesleinhuepf/napari-plot-profile/raw/main/docs/topographical_view_screencast.gif)
 
 This [napari] plugin was generated with [Cookiecutter] using with [@napari]'s [cookiecutter-napari-plugin] template.
 
