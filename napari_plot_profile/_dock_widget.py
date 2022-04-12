@@ -10,6 +10,12 @@ from magicgui.widgets import Table
 from napari._qt.qthreading import thread_worker
 from qtpy.QtCore import QTimer
 
+from magicgui import magic_factory
+from ._functions import topo_view
+from napari.types import ImageData, LayerDataTuple
+from typing import List
+from napari.utils.colormaps import colormap_utils
+
 import pyqtgraph as pg
 import numpy as np
 import napari
@@ -281,6 +287,91 @@ def profile(layer, line, num_points : int = 256):
 
 def min_max(data):
     return data.min(), data.max()
+
+
+@register_dock_widget(menu="Visualization > Topographical view")
+@magic_factory(return_as={"choices": ['image', 'points', 'surface']},
+               step_size={"visible": True})
+def topographical_view(image: ImageData, return_as: str = 'image',
+                       step_size: int = 1) -> List[LayerDataTuple]:
+    """Return a 3D topographical view from a 2D image.
+
+    This function warps pixels intensities to heights and returns a 3D layer
+    either as a 3D image, a points cloud or a surface. If image has negative
+    pixels, the 3D image is returned as 2 separated layers (positve and
+    negative).
+
+    Parameters
+    ----------
+    image : 2D-array, int
+        Grayscale 2D input image with dtype int
+    return_as : string
+        Type of layer to be returned. Options are 'image', 'points' or
+        'surface'. Default: 'image'. If 'return_as' = 'image' and image has
+        negative pixels, two layers are returned (positve and negative parts).
+        Depending on image size, 'surface' may take a long time to compute.
+    step_size : uint
+        If 'return_as' = 'image' or 'points', downsample result by step_size.
+        If 'return_as' = 'surface', 'step_size' is the 'step_size' parameter
+        from scikit-image marching cubes function.
+
+    Returns
+    -------
+    napari Layer : list of LayerDataTuple
+        One (or two) napari layer(s) of 'return_as' type displaying pixel
+        intensities as heights. Two layers if image has negative values and
+        'return_as' = 'image'
+    """
+    data = topo_view(image, return_as, step_size)
+    max_range = image.max() - image.min()
+    if return_as == 'points':
+        data[:,0] = -data[:,0]
+        return [(data,
+                {'name': 'topographical points',
+                 'size': max(int(round(image.size/30000)), 1)},
+                return_as)]
+    elif return_as == 'surface':
+        return [(data,
+                {'name': 'topographical surface',
+                 'colormap': 'gist_earth',
+                 'scale': (-1,1,1),
+                 'translate': (abs(image.min()),0,0)},
+                return_as)]
+    elif return_as == 'image':
+        if (image < 0).any():
+            return[(data[0][::-1],
+                        {'name': 'topographical image negative',
+                         'translate': (0,0,0),
+                         'blending': 'additive',
+                         'rendering': 'minip',
+                         'colormap': get_inferno_rev_cmap()},
+                        return_as),
+                   (data[1][::-1],
+                       {'name': 'topographical image positive',
+                        'translate': (-int(max_range)//2,0,0),
+                        'blending': 'additive',
+                        'rendering': 'mip',
+                        'colormap': 'gist_earth'},
+                       return_as)]
+        else:
+            return [(data[::-1],
+                    {'name': 'topographical image',
+                     'translate': (-int(image.max()),0,0),
+                     'blending': 'additive',
+                     'rendering': 'mip',
+                     'colormap': 'gist_earth'},
+                    return_as)]
+
+def get_inferno_rev_cmap():
+    """Revert inferno colormap and make last value transparent"""
+    inferno_colormap = colormap_utils.ensure_colormap('inferno')
+    inferno_rev_colormap = {
+      'colors': np.copy(inferno_colormap.colors)[::-1],
+      'name': 'inferno_inv',
+      'interpolation': 'linear'
+    }
+    inferno_rev_colormap['colors'][-1, -1] = 0
+    return inferno_rev_colormap
 
 @napari_hook_implementation
 def napari_experimental_provide_dock_widget():
