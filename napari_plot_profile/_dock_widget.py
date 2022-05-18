@@ -11,7 +11,7 @@ from napari._qt.qthreading import thread_worker
 from qtpy.QtCore import QTimer
 
 from magicgui import magic_factory
-from ._functions import topo_view
+from ._functions import topographic_image, topographic_points, topographic_surface
 from napari.types import ImageData, LayerDataTuple
 from typing import List
 from napari.utils.colormaps import colormap_utils
@@ -290,9 +290,10 @@ def min_max(data):
 
 
 @register_dock_widget(menu="Visualization > Topographical view")
-@magic_factory(return_as={"choices": ['image', 'points', 'surface']},
-               step_size={"visible": True})
-def topographical_view(image: ImageData, return_as: str = 'image',
+@magic_factory(step_size={"visible": True})
+def topographical_view(image: ImageData, return_image: bool = True,
+                       return_points: bool = False,
+                       return_surface: bool = False,
                        step_size: int = 1) -> List[LayerDataTuple]:
     """Return a 3D topographical view from a 2D image.
 
@@ -305,65 +306,62 @@ def topographical_view(image: ImageData, return_as: str = 'image',
     ----------
     image : 2D-array, int
         Grayscale 2D input image with dtype int
-    return_as : string
-        Type of layer to be returned. Options are 'image', 'points' or
-        'surface'. Default: 'image'. If 'return_as' = 'image' and image has
-        negative pixels, two layers are returned (positve and negative parts).
-        Depending on image size, 'surface' may take a long time to compute.
+    return_image : bool
+        If true, returns 3D image layers
+    return_points : bool
+        If true, returns a points layer
+    return_surface : bool
+        If true, returns a surface layer. Depending on image size, it may take
+        a long time to compute.
     step_size : uint
-        If 'return_as' = 'image' or 'points', downsample result by step_size.
-        If 'return_as' = 'surface', 'step_size' is the 'step_size' parameter
-        from scikit-image marching cubes function.
+        For 3D images and points, it downsamples result by step_size.
+        For surface, 'step_size' is the 'step_size' parameter from scikit-image
+        marching cubes function.
 
     Returns
     -------
     napari Layer : list of LayerDataTuple
-        One (or two) napari layer(s) of 'return_as' type displaying pixel
-        intensities as heights. Two layers if image has negative values and
-        'return_as' = 'image'
+        napari layers displaying pixel intensities as heights.
     """
-    data = topo_view(image, return_as, step_size)
-    max_range = image.max() - image.min()
-    if return_as == 'points':
-        data[:,0] = -data[:,0]
-        return [(data,
-                {'name': 'topographical points',
-                 'size': max(int(round(image.size/30000)), 1)},
-                return_as)]
-    elif return_as == 'surface':
-        return [(data,
-                {'name': 'topographical surface',
-                 'colormap': 'gist_earth',
-                 'scale': (-1,1,1),
-                 'translate': (abs(image.min()),0,0)},
-                return_as)]
-    elif return_as == 'image':
-        if (image < 0).any():
-            return[(data[0][::-1],
-                        {'name': 'topographical image negative',
-                         'translate': (0,0,0),
-                         'blending': 'additive',
-                         'rendering': 'minip',
-                         'colormap': get_inferno_rev_cmap()},
-                        return_as),
-                   (data[1][::-1],
-                       {'name': 'topographical image positive',
-                        'translate': (-int(max_range)//2,0,0),
-                        'blending': 'additive',
-                        'rendering': 'mip',
-                        'colormap': 'gist_earth'},
-                       return_as)]
-        else:
-            return [(data[::-1],
-                    {'name': 'topographical image',
-                     'translate': (-int(image.max()),0,0),
-                     'blending': 'additive',
-                     'rendering': 'mip',
-                     'colormap': 'gist_earth'},
-                    return_as)]
+    output_list = []
+    if return_image is True:
+        data = topographic_image(image, step_size)
+        output_list += [(data[0][::-1],
+                         {'name': 'topographical image',
+                          'translate': (-int(image.max()), 0, 0),
+                          'blending': 'additive',
+                          'rendering': 'mip',
+                          'colormap': 'gist_earth'},
+                         'image')]
+        # if image has negative pixels, add negative layer separately
+        if len(data) > 1:
+            output_list += [(data[1][::-1],
+                             {'name': 'topographical image negative',
+                              'translate': (0, 0, 0),
+                              'blending': 'additive',
+                              'rendering': 'minip',
+                              'colormap': get_inferno_rev_cmap()},
+                             'image')]
+    if return_points is True:
+        data = topographic_points(image, step_size)
+        data[:, 0] = -data[:, 0]
+        output_list += [(data,
+                         {'name': 'topographical points',
+                          'size': max(int(round(image.size/30000)), 1)},
+                         'points')]
+    if return_surface is True:
+        data = topographic_surface(image, step_size)
+        output_list += [(data,
+                         {'name': 'topographical surface',
+                          'colormap': 'gist_earth',
+                          'scale': (-1, 1, 1),
+                          'translate': (abs(image.min()), 0, 0)},
+                         'surface')]
+    return output_list
+
 
 def get_inferno_rev_cmap():
-    """Revert inferno colormap and make last value transparent"""
+    """Revert inferno colormap and make last value transparent."""
     inferno_colormap = colormap_utils.ensure_colormap('inferno')
     inferno_rev_colormap = {
       'colors': np.copy(inferno_colormap.colors)[::-1],
