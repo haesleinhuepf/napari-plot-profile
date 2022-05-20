@@ -47,6 +47,7 @@ expected_output_list = [
                          zip(func_list, array_input_list,
                              expected_output_list))
 def test_function_output(function, array_input, expected_output):
+    """Test outputs from topographic image and points."""
     output = function(array_input)
     output_stack = np.vstack(output)
     expected_output_stack = np.vstack(expected_output)
@@ -71,6 +72,7 @@ expected_output_shape_list = [
 @pytest.mark.parametrize("sample_factor, expected_output_shapes",
                          zip([1, 2], expected_output_shape_list))
 def test_surface_and_sample_factor(sample_factor, expected_output_shapes):
+    """Test outputs from topographic surface and sample factor."""
     output = topographic_surface(array_4_sample_factor,
                                  sample_factor=sample_factor)[0]
     output_shapes = [out.shape for out in output]

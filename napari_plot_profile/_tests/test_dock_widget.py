@@ -3,7 +3,8 @@ import pytest
 import numpy as np
 
 
-def test_something_with_viewer(make_napari_viewer):
+def test_dock_plot_profile_widget(make_napari_viewer):
+    """Test docking plot profile widget to viewer."""
     viewer = make_napari_viewer()
 
     import numpy as np
@@ -44,6 +45,7 @@ expected_types_list = [
 @pytest.mark.parametrize("array, expected_types",
                          zip(array_list, expected_types_list))
 def test_run_topographical_widget(make_napari_viewer, array, expected_types):
+    """Test running topographical widget on 2 images."""
     viewer = make_napari_viewer()
     viewer.add_image(array)
     widget = napari_plot_profile.topographical_view(
