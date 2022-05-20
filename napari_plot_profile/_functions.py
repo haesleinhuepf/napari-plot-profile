@@ -53,7 +53,7 @@ def topographic_points(image, sample_factor=1):
     """Generate points in 3D from a 2D image."""
     z_indices, y_indices, x_indices = _get_3D_indices(image, sample_factor)
     points = np.stack((z_indices, y_indices, x_indices), axis=1)
-    return points
+    return [points]
 
 
 def topographic_surface(image, sample_factor=1):
@@ -75,4 +75,4 @@ def topographic_surface(image, sample_factor=1):
                                                      level=0,
                                                      step_size=sample_factor)
     surface = (verts, faces, val)
-    return surface
+    return [surface]

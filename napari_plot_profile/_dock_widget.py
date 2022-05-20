@@ -344,14 +344,14 @@ def topographical_view(image: ImageData, return_image: bool = True,
                              'image')]
     if return_points is True:
         data = topographic_points(image, step_size)
-        data[:, 0] = -data[:, 0]
-        output_list += [(data,
+        data[0][:, 0] = -data[0][:, 0]
+        output_list += [(data[0],
                          {'name': 'topographical points',
                           'size': max(int(round(image.size/30000)), 1)},
                          'points')]
     if return_surface is True:
         data = topographic_surface(image, step_size)
-        output_list += [(data,
+        output_list += [(data[0],
                          {'name': 'topographical surface',
                           'colormap': 'gist_earth',
                           'scale': (-1, 1, 1),
