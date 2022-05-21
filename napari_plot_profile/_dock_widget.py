@@ -1,5 +1,7 @@
 import time
 import warnings
+from enum import Enum
+from functools import partial
 
 from qtpy.QtWidgets import QSpacerItem, QSizePolicy
 from napari_plugin_engine import napari_hook_implementation
@@ -288,53 +290,39 @@ def profile(layer, line, num_points : int = 256):
 def min_max(data):
     return data.min(), data.max()
 
+class TopographicalVisualization(Enum):
+    Image = partial(topographic_image)
+    Points = partial(topographic_points)
+    Surface = partial(topographic_surface)
 
 @register_dock_widget(menu="Visualization > Topographical view")
 @magic_factory(step_size={"visible": True})
-def topographical_view(image: ImageData, return_image: bool = True,
-                       return_points: bool = False,
-                       return_surface: bool = False,
+def topographical_view(image: ImageData, visualize_as:TopographicalVisualization = TopographicalVisualization.Image,
                        step_size: int = 1) -> List[LayerDataTuple]:
     """Return a 3D topographical view from a 2D image.
 
-    This function warps pixels intensities to heights and returns a 3D layer
-    either as a 3D image, a points cloud or a surface. If image has negative
-    pixels, the 3D image is returned as 2 separated layers (positve and
-    negative).
+    This function warps pixels intensities to heights and returns a 3D visualization as specified.
 
     Parameters
     ----------
-    image : 2D-array, int
-        Grayscale 2D input image with dtype int
-    return_image : bool
-        If true, returns 3D image layers
-    return_points : bool
-        If true, returns a points layer
-    return_surface : bool
-        If true, returns a surface layer. Depending on image size, it may take
-        a long time to compute.
+    image : 2D-array
+        Grayscale 2D input image; will be converted to int internally
+    visualize_as: TopographicalVisualization
+        Type of visualization: Image(s), Points or Surfaces
     step_size : uint
-        For 3D images and points, it downsamples result by step_size.
-        For surface, 'step_size' is the 'step_size' parameter from scikit-image
-        marching cubes function.
+        Grid-size for the visualization
 
     Returns
     -------
     napari Layer : list of LayerDataTuple
         napari layers displaying pixel intensities as heights.
     """
-    output_list = []
-    if return_image is True:
-        output_list.extend(topographic_image(image, step_size))
+    if not isinstance(image.dtype, int):
+        image = image.astype(int)
 
-    if return_points is True:
-        output_list.extend(topographic_points(image, step_size))
-
-    if return_surface is True:
-        output_list.extend(topographic_surface(image, step_size))
+    output_list = visualize_as.value(image, step_size)
 
     return output_list
-
 
 
 @napari_hook_implementation

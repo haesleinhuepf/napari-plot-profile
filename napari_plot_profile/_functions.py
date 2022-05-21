@@ -37,7 +37,7 @@ def topographic_image_positive(image, sample_factor):
     return output_image
 
 
-def topographic_image(image:ImageData, sample_factor:float = 1) -> List[LayerDataTuple]:
+def topographic_image(image:ImageData, sample_factor: float = 1) -> List[LayerDataTuple]:
     """Generate 3D topographical layers from a 2D image."""
     output_layer_data_tuple_list = []
 
@@ -67,7 +67,7 @@ def topographic_image(image:ImageData, sample_factor:float = 1) -> List[LayerDat
     return output_layer_data_tuple_list
 
 
-def topographic_points(image:ImageData, sample_factor:float = 1) -> List[LayerDataTuple]:
+def topographic_points(image:ImageData, sample_factor: float = 1) -> List[LayerDataTuple]:
     """Generate points in 3D from a 2D image."""
     z_indices, y_indices, x_indices = _get_3D_indices(image, sample_factor)
     points = np.stack((z_indices, y_indices, x_indices), axis=1)
@@ -82,7 +82,7 @@ def topographic_points(image:ImageData, sample_factor:float = 1) -> List[LayerDa
     return [(layer_data, layer_properties, layer_type)]
 
 
-def topographic_surface(image, sample_factor=1):
+def topographic_surface(image:ImageData, sample_factor: float = 1) -> List[LayerDataTuple]:
     """Generate a surface from a 2D image."""
     # Get topographic image(s)
     layerDataTuples = topographic_image(image, sample_factor=1)
