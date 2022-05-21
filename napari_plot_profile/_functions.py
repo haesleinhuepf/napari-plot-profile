@@ -5,6 +5,16 @@ from napari.types import LayerDataTuple, ImageData
 from skimage import measure
 from napari.utils.colormaps import colormap_utils
 
+from napari_plugin_engine import napari_hook_implementation
+
+@napari_hook_implementation
+def napari_experimental_provide_function():
+    return [
+        topographic_image,
+        topographic_points,
+        topographic_surface
+    ]
+
 def _get_3D_indices(image, sample_factor):
     # Get (z, y, x) coordinates (z are image intensities)
     z_indices = image.ravel().astype(int)[::sample_factor]
@@ -13,7 +23,7 @@ def _get_3D_indices(image, sample_factor):
     return z_indices, y_indices, x_indices
 
 
-def topographic_image_positive(image, sample_factor):
+def _topographic_image_positive(image, sample_factor):
     """Generate a 3D topographical image from a 2D positive image."""
     max_range = np.ceil(image.max()).astype(int)
     z_indices, y_indices, x_indices = _get_3D_indices(image, sample_factor)
@@ -37,17 +47,20 @@ def topographic_image_positive(image, sample_factor):
     return output_image
 
 
-def topographic_image(image:ImageData, sample_factor: float = 1) -> List[LayerDataTuple]:
-    """Generate 3D topographical layers from a 2D image."""
+def topographic_image(image: ImageData, step_size: int = 1) -> List[LayerDataTuple]:
+    """Generate 3D topographical image layers from a 2D image."""
+
     output_layer_data_tuple_list = []
 
     positive_image = np.clip(image, a_min=0, a_max=None)
-    layer_data = topographic_image_positive(positive_image, sample_factor)[::-1]
+
+    # assemble LayerDataTuple
+    layer_data = _topographic_image_positive(positive_image, step_size)[::-1]
     layer_properties = {'name': 'topographical image',
-                      'translate': (-int(image.max()), 0, 0),
-                      'blending': 'additive',
-                      'rendering': 'mip',
-                      'colormap': 'gist_earth'}
+                        'translate': (-int(image.max()), 0, 0),
+                        'blending': 'additive',
+                        'rendering': 'mip',
+                        'colormap': 'gist_earth'}
     layer_type = 'image'
 
     output_layer_data_tuple_list.append((layer_data, layer_properties, layer_type))
@@ -55,37 +68,41 @@ def topographic_image(image:ImageData, sample_factor: float = 1) -> List[LayerDa
     # if image has negatives pixels, process positive and negative separately
     if (image < 0).any():
         negative_image = -np.clip(image, a_min=None, a_max=0)
-        layer_data = -topographic_image_positive(negative_image, sample_factor)[::-1]
+
+        # assemble LayerDataTuple
+        layer_data = -_topographic_image_positive(negative_image, step_size)[::-1]
         layer_properties = {'name': 'topographical image negative',
-                         'translate': (0, 0, 0),
-                         'blending': 'additive',
-                         'rendering': 'minip',
-                         'colormap': get_inferno_rev_cmap()}
+                            'translate': (0, 0, 0),
+                            'blending': 'additive',
+                            'rendering': 'minip',
+                            'colormap': get_inferno_rev_cmap()}
 
         output_layer_data_tuple_list.append((layer_data, layer_properties, layer_type))
 
     return output_layer_data_tuple_list
 
 
-def topographic_points(image:ImageData, sample_factor: float = 1) -> List[LayerDataTuple]:
+def topographic_points(image: ImageData, step_size: int = 1) -> List[LayerDataTuple]:
     """Generate points in 3D from a 2D image."""
-    z_indices, y_indices, x_indices = _get_3D_indices(image, sample_factor)
+    z_indices, y_indices, x_indices = _get_3D_indices(image, step_size)
     points = np.stack((z_indices, y_indices, x_indices), axis=1)
 
     points[:, 0] = -points[:, 0]
 
+    # assemble LayerDataTuple
+    magic_number = 30000
     layer_data = points
     layer_properties = {'name': 'topographical points',
-                      'size': max(int(round(image.size / 30000)), 1)}
+                        'size': max(int(round(image.size / magic_number)), 1)}
     layer_type = 'points'
 
     return [(layer_data, layer_properties, layer_type)]
 
 
-def topographic_surface(image:ImageData, sample_factor: float = 1) -> List[LayerDataTuple]:
+def topographic_surface(image: ImageData, step_size: int = 1) -> List[LayerDataTuple]:
     """Generate a surface from a 2D image."""
     # Get topographic image(s)
-    layerDataTuples = topographic_image(image, sample_factor=1)
+    layerDataTuples = topographic_image(image, step_size=1)
     output_list = [layer[0] for layer in layerDataTuples]
 
     # If list has 2 images, concatenate them
@@ -99,16 +116,17 @@ def topographic_surface(image:ImageData, sample_factor: float = 1) -> List[Layer
     # offsets image to positive values to get surface where level = 0
     offset = abs(output_image.min())
     output_image[output_image != 0] += offset
-    verts, faces, norm, val = measure.marching_cubes(output_image,
-                                                     level=0,
-                                                     step_size=sample_factor)
-    surface = (verts, faces, val)
+    vertices, faces, normals, values = measure.marching_cubes(output_image,
+                                                              level=0,
+                                                              step_size=step_size)
+    surface = (vertices, faces, values)
 
+    # assemble LayerDataTuple
     layer_data = surface
     layer_properties = {'name': 'topographical surface',
-                      'colormap': 'gist_earth',
-                      'scale': (-1, 1, 1),
-                      'translate': (abs(image.min()), 0, 0)}
+                        'colormap': 'gist_earth',
+                        'scale': (-1, 1, 1),
+                        'translate': (abs(image.min()), 0, 0)}
     layer_type = 'surface'
 
     return [(layer_data, layer_properties, layer_type)]

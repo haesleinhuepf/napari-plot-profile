@@ -74,6 +74,6 @@ expected_output_shape_list = [
 def test_surface_and_sample_factor(sample_factor, expected_output_shapes):
     """Test outputs from topographic surface and sample factor."""
     output = topographic_surface(array_4_sample_factor,
-                                 sample_factor=sample_factor)[0]
+                                 step_size=sample_factor)[0]
     output_shapes = [out.shape for out in output]
     assert expected_output_shapes == output_shapes

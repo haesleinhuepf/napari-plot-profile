@@ -314,15 +314,14 @@ def topographical_view(image: ImageData, visualize_as:TopographicalVisualization
 
     Returns
     -------
-    napari Layer : list of LayerDataTuple
+    napari layers : list of LayerDataTuple
         napari layers displaying pixel intensities as heights.
     """
+    image = np.asarray(image)
     if not isinstance(image.dtype, int):
         image = image.astype(int)
 
-    output_list = visualize_as.value(image, step_size)
-
-    return output_list
+    return visualize_as.value(image, step_size)
 
 
 @napari_hook_implementation
