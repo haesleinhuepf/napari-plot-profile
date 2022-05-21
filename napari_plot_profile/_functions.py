@@ -1,6 +1,9 @@
-import numpy as np
-from skimage import measure
+from typing import List
 
+import numpy as np
+from napari.types import LayerDataTuple, ImageData
+from skimage import measure
+from napari.utils.colormaps import colormap_utils
 
 def _get_3D_indices(image, sample_factor):
     # Get (z, y, x) coordinates (z are image intensities)
@@ -34,19 +37,34 @@ def topographic_image_positive(image, sample_factor):
     return output_image
 
 
-def topographic_image(image, sample_factor=1):
-    """Generate 3D topographical image(s) from a 2D image."""
-    output_image_list = []
-    image_pos = np.clip(image, a_min=0, a_max=None)
-    output_image_list.append(topographic_image_positive(image_pos,
-                                                        sample_factor))
+def topographic_image(image:ImageData, sample_factor:float = 1) -> List[LayerDataTuple]:
+    """Generate 3D topographical layers from a 2D image."""
+    output_layer_data_tuple_list = []
+
+    positive_image = np.clip(image, a_min=0, a_max=None)
+    layer_data = topographic_image_positive(positive_image, sample_factor)[::-1]
+    layer_properties = {'name': 'topographical image',
+                      'translate': (-int(image.max()), 0, 0),
+                      'blending': 'additive',
+                      'rendering': 'mip',
+                      'colormap': 'gist_earth'}
+    layer_type = 'image'
+
+    output_layer_data_tuple_list.append((layer_data, layer_properties, layer_type))
+
     # if image has negatives pixels, process positive and negative separately
     if (image < 0).any():
-        image_neg = -np.clip(image, a_min=None, a_max=0)
-        output_image_neg = -topographic_image_positive(image_neg,
-                                                       sample_factor)
-        output_image_list.append(output_image_neg[::-1])
-    return output_image_list
+        negative_image = -np.clip(image, a_min=None, a_max=0)
+        layer_data = -topographic_image_positive(negative_image, sample_factor)[::-1]
+        layer_properties = {'name': 'topographical image negative',
+                         'translate': (0, 0, 0),
+                         'blending': 'additive',
+                         'rendering': 'minip',
+                         'colormap': get_inferno_rev_cmap()}
+        
+        output_layer_data_tuple_list.append((layer_data, layer_properties, layer_type))
+
+    return output_layer_data_tuple_list
 
 
 def topographic_points(image, sample_factor=1):
@@ -76,3 +94,15 @@ def topographic_surface(image, sample_factor=1):
                                                      step_size=sample_factor)
     surface = (verts, faces, val)
     return [surface]
+
+def get_inferno_rev_cmap():
+    """Revert inferno colormap and make last value transparent."""
+    inferno_colormap = colormap_utils.ensure_colormap('inferno')
+    inferno_rev_colormap = {
+      'colors': np.copy(inferno_colormap.colors)[::-1],
+      'name': 'inferno_inv',
+      'interpolation': 'linear'
+    }
+    inferno_rev_colormap['colors'][-1, -1] = 0
+    return inferno_rev_colormap
+

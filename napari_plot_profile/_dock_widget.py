@@ -14,7 +14,7 @@ from magicgui import magic_factory
 from ._functions import topographic_image, topographic_points, topographic_surface
 from napari.types import ImageData, LayerDataTuple
 from typing import List
-from napari.utils.colormaps import colormap_utils
+
 
 import pyqtgraph as pg
 import numpy as np
@@ -325,23 +325,8 @@ def topographical_view(image: ImageData, return_image: bool = True,
     """
     output_list = []
     if return_image is True:
-        data = topographic_image(image, step_size)
-        output_list += [(data[0][::-1],
-                         {'name': 'topographical image',
-                          'translate': (-int(image.max()), 0, 0),
-                          'blending': 'additive',
-                          'rendering': 'mip',
-                          'colormap': 'gist_earth'},
-                         'image')]
-        # if image has negative pixels, add negative layer separately
-        if len(data) > 1:
-            output_list += [(data[1][::-1],
-                             {'name': 'topographical image negative',
-                              'translate': (0, 0, 0),
-                              'blending': 'additive',
-                              'rendering': 'minip',
-                              'colormap': get_inferno_rev_cmap()},
-                             'image')]
+        output_list.extend(topographic_image(image, step_size))
+
     if return_points is True:
         data = topographic_points(image, step_size)
         data[0][:, 0] = -data[0][:, 0]
@@ -360,16 +345,6 @@ def topographical_view(image: ImageData, return_image: bool = True,
     return output_list
 
 
-def get_inferno_rev_cmap():
-    """Revert inferno colormap and make last value transparent."""
-    inferno_colormap = colormap_utils.ensure_colormap('inferno')
-    inferno_rev_colormap = {
-      'colors': np.copy(inferno_colormap.colors)[::-1],
-      'name': 'inferno_inv',
-      'interpolation': 'linear'
-    }
-    inferno_rev_colormap['colors'][-1, -1] = 0
-    return inferno_rev_colormap
 
 @napari_hook_implementation
 def napari_experimental_provide_dock_widget():
