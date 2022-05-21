@@ -61,17 +61,25 @@ def topographic_image(image:ImageData, sample_factor:float = 1) -> List[LayerDat
                          'blending': 'additive',
                          'rendering': 'minip',
                          'colormap': get_inferno_rev_cmap()}
-        
+
         output_layer_data_tuple_list.append((layer_data, layer_properties, layer_type))
 
     return output_layer_data_tuple_list
 
 
-def topographic_points(image, sample_factor=1):
+def topographic_points(image:ImageData, sample_factor:float = 1) -> List[LayerDataTuple]:
     """Generate points in 3D from a 2D image."""
     z_indices, y_indices, x_indices = _get_3D_indices(image, sample_factor)
     points = np.stack((z_indices, y_indices, x_indices), axis=1)
-    return [points]
+
+    points[:, 0] = -points[:, 0]
+
+    layer_data = points
+    layer_properties = {'name': 'topographical points',
+                      'size': max(int(round(image.size / 30000)), 1)}
+    layer_type = 'points'
+
+    return [(layer_data, layer_properties, layer_type)]
 
 
 def topographic_surface(image, sample_factor=1):
