@@ -10,6 +10,12 @@ from magicgui.widgets import Table
 from napari._qt.qthreading import thread_worker
 from qtpy.QtCore import QTimer
 
+from magicgui import magic_factory
+from ._functions import topographic_image, topographic_points, topographic_surface
+from napari.types import ImageData, LayerDataTuple
+from typing import List
+from napari.utils.colormaps import colormap_utils
+
 import pyqtgraph as pg
 import numpy as np
 import napari
@@ -281,6 +287,89 @@ def profile(layer, line, num_points : int = 256):
 
 def min_max(data):
     return data.min(), data.max()
+
+
+@register_dock_widget(menu="Visualization > Topographical view")
+@magic_factory(step_size={"visible": True})
+def topographical_view(image: ImageData, return_image: bool = True,
+                       return_points: bool = False,
+                       return_surface: bool = False,
+                       step_size: int = 1) -> List[LayerDataTuple]:
+    """Return a 3D topographical view from a 2D image.
+
+    This function warps pixels intensities to heights and returns a 3D layer
+    either as a 3D image, a points cloud or a surface. If image has negative
+    pixels, the 3D image is returned as 2 separated layers (positve and
+    negative).
+
+    Parameters
+    ----------
+    image : 2D-array, int
+        Grayscale 2D input image with dtype int
+    return_image : bool
+        If true, returns 3D image layers
+    return_points : bool
+        If true, returns a points layer
+    return_surface : bool
+        If true, returns a surface layer. Depending on image size, it may take
+        a long time to compute.
+    step_size : uint
+        For 3D images and points, it downsamples result by step_size.
+        For surface, 'step_size' is the 'step_size' parameter from scikit-image
+        marching cubes function.
+
+    Returns
+    -------
+    napari Layer : list of LayerDataTuple
+        napari layers displaying pixel intensities as heights.
+    """
+    output_list = []
+    if return_image is True:
+        data = topographic_image(image, step_size)
+        output_list += [(data[0][::-1],
+                         {'name': 'topographical image',
+                          'translate': (-int(image.max()), 0, 0),
+                          'blending': 'additive',
+                          'rendering': 'mip',
+                          'colormap': 'gist_earth'},
+                         'image')]
+        # if image has negative pixels, add negative layer separately
+        if len(data) > 1:
+            output_list += [(data[1][::-1],
+                             {'name': 'topographical image negative',
+                              'translate': (0, 0, 0),
+                              'blending': 'additive',
+                              'rendering': 'minip',
+                              'colormap': get_inferno_rev_cmap()},
+                             'image')]
+    if return_points is True:
+        data = topographic_points(image, step_size)
+        data[0][:, 0] = -data[0][:, 0]
+        output_list += [(data[0],
+                         {'name': 'topographical points',
+                          'size': max(int(round(image.size/30000)), 1)},
+                         'points')]
+    if return_surface is True:
+        data = topographic_surface(image, step_size)
+        output_list += [(data[0],
+                         {'name': 'topographical surface',
+                          'colormap': 'gist_earth',
+                          'scale': (-1, 1, 1),
+                          'translate': (abs(image.min()), 0, 0)},
+                         'surface')]
+    return output_list
+
+
+def get_inferno_rev_cmap():
+    """Revert inferno colormap and make last value transparent."""
+    inferno_colormap = colormap_utils.ensure_colormap('inferno')
+    inferno_rev_colormap = {
+      'colors': np.copy(inferno_colormap.colors)[::-1],
+      'name': 'inferno_inv',
+      'interpolation': 'linear'
+    }
+    inferno_rev_colormap['colors'][-1, -1] = 0
+    return inferno_rev_colormap
 
 @napari_hook_implementation
 def napari_experimental_provide_dock_widget():
