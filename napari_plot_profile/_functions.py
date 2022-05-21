@@ -85,7 +85,9 @@ def topographic_points(image:ImageData, sample_factor:float = 1) -> List[LayerDa
 def topographic_surface(image, sample_factor=1):
     """Generate a surface from a 2D image."""
     # Get topographic image(s)
-    output_list = topographic_image(image, sample_factor=1)
+    layerDataTuples = topographic_image(image, sample_factor=1)
+    output_list = [layer[0] for layer in layerDataTuples]
+
     # If list has 2 images, concatenate them
     if len(output_list) > 1:
         output_image = np.concatenate(
@@ -101,7 +103,16 @@ def topographic_surface(image, sample_factor=1):
                                                      level=0,
                                                      step_size=sample_factor)
     surface = (verts, faces, val)
-    return [surface]
+
+    layer_data = surface
+    layer_properties = {'name': 'topographical surface',
+                      'colormap': 'gist_earth',
+                      'scale': (-1, 1, 1),
+                      'translate': (abs(image.min()), 0, 0)}
+    layer_type = 'surface'
+
+    return [(layer_data, layer_properties, layer_type)]
+
 
 def get_inferno_rev_cmap():
     """Revert inferno colormap and make last value transparent."""
