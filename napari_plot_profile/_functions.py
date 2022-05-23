@@ -5,16 +5,6 @@ from napari.types import LayerDataTuple, ImageData
 from skimage import measure
 from napari.utils.colormaps import colormap_utils
 
-from napari_plugin_engine import napari_hook_implementation
-
-@napari_hook_implementation
-def napari_experimental_provide_function():
-    return [
-        topographic_image,
-        topographic_points,
-        topographic_surface
-    ]
-
 def _get_3D_indices(image, sample_factor):
     # Get (z, y, x) coordinates (z are image intensities)
     z_indices = image.ravel().astype(int)[::sample_factor]
@@ -70,7 +60,7 @@ def topographic_image(image: ImageData, step_size: int = 1) -> List[LayerDataTup
         negative_image = -np.clip(image, a_min=None, a_max=0)
 
         # assemble LayerDataTuple
-        layer_data = -_topographic_image_positive(negative_image, step_size)[::-1]
+        layer_data = -_topographic_image_positive(negative_image, step_size)
         layer_properties = {'name': 'topographical image negative',
                             'translate': (0, 0, 0),
                             'blending': 'additive',
@@ -108,8 +98,8 @@ def topographic_surface(image: ImageData, step_size: int = 1) -> List[LayerDataT
     # If list has 2 images, concatenate them
     if len(output_list) > 1:
         output_image = np.concatenate(
-            (output_list[1][::-1],
-             output_list[0][1:])
+            (output_list[0][1:],
+             output_list[1])
             )
     else:
         output_image = output_list[0]
@@ -125,8 +115,8 @@ def topographic_surface(image: ImageData, step_size: int = 1) -> List[LayerDataT
     layer_data = surface
     layer_properties = {'name': 'topographical surface',
                         'colormap': 'gist_earth',
-                        'scale': (-1, 1, 1),
-                        'translate': (abs(image.min()), 0, 0)}
+                        'scale': (1, 1, 1),
+                        'translate': (-int(image.max()), 0, 0)}
     layer_type = 'surface'
 
     return [(layer_data, layer_properties, layer_type)]

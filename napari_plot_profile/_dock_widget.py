@@ -327,4 +327,4 @@ def topographical_view(image: ImageData, visualize_as:TopographicalVisualization
 @napari_hook_implementation
 def napari_experimental_provide_dock_widget():
     # you can return either a single widget, or a sequence of widgets
-    return [PlotProfile]
+    return [PlotProfile, topographical_view]

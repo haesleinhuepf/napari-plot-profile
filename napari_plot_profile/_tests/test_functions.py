@@ -57,8 +57,8 @@ def test_topographical_view_points():
 
 
 #  Input array to test
-array_4_sample_factor = np.repeat(np.arange(3, -1, -1)[np.newaxis, :],
-                                  4, axis=0)
+array_4_step_size = np.repeat(np.arange(3, -1, -1)[np.newaxis, :],
+                              4, axis=0)
 
 #  List of expected output shapes
 expected_output_shape_list = [
@@ -67,11 +67,11 @@ expected_output_shape_list = [
     ]
 
 
-@pytest.mark.parametrize("sample_factor, expected_output_shapes",
+@pytest.mark.parametrize("step_size, expected_output_shapes",
                          zip([1, 2], expected_output_shape_list))
-def test_surface_and_sample_factor(sample_factor, expected_output_shapes):
+def test_surface_and_sample_factor(step_size, expected_output_shapes):
     """Test outputs from topographic surface and sample factor."""
-    output = topographic_surface(array_4_sample_factor,
-                                 step_size=sample_factor)[0][0]
+    output = topographic_surface(array_4_step_size,
+                                 step_size=step_size)[0][0]
     output_shapes = [out.shape for out in output]
     assert expected_output_shapes == output_shapes
