@@ -37,7 +37,7 @@ def _topographic_image_positive(image, sample_factor):
     return output_image
 
 
-def topographic_image(image: ImageData, step_size: int = 1) -> List[LayerDataTuple]:
+def topographic_image(image: ImageData, step_size: int = 1, viewer: napari.Viewer = None) -> List[LayerDataTuple]:
     """Generate 3D topographical image layers from a 2D image."""
 
     output_layer_data_tuple_list = []
