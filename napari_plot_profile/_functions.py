@@ -4,7 +4,7 @@ import numpy as np
 from napari.types import LayerDataTuple, ImageData
 from skimage import measure
 from napari.utils.colormaps import colormap_utils
-
+import napari
 def _get_3D_indices(image, sample_factor):
     # Get (z, y, x) coordinates (z are image intensities)
     z_indices = image.ravel().astype(int)[::sample_factor]
