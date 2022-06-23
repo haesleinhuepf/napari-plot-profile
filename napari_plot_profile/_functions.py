@@ -68,14 +68,15 @@ def topographic_image(image: ImageData, step_size: int = 1, viewer: napari.Viewe
                             'colormap': get_inferno_rev_cmap()}
 
         output_layer_data_tuple_list.append((layer_data, layer_properties, layer_type))
-for layer in output_layer_data_tuple_list:
-  if viewer is not None:
-    if layer[1]['name'] not in viewer.layers:
-      viewer.add_image(layer[0], **layer[1])
-    else:
-      _layer = viewer.layers[layer[1]['name']
-      _layer.data = layer[0]
-      _layer.properties = layer[1]
+        
+    for layer in output_layer_data_tuple_list:
+        if viewer is not None:
+            if layer[1]['name'] not in viewer.layers:
+                viewer.add_image(layer[0], **layer[1])
+            else:
+                _layer = viewer.layers[layer[1]]['name']
+                _layer.data = layer[0]
+                _layer.properties = layer[1]
     return output_layer_data_tuple_list
 
 
