@@ -1,4 +1,4 @@
-# napari-plot-profile
+# napari-plot-profile (npp)
 
 [![License](https://img.shields.io/pypi/l/napari-plot-profile.svg?color=green)](https://github.com/haesleinhuepf/napari-plot-profile/raw/main/LICENSE)
 [![PyPI](https://img.shields.io/pypi/v/napari-plot-profile.svg?color=green)](https://pypi.org/project/napari-plot-profile)
@@ -13,8 +13,6 @@
 Plot intensities along a line in [napari].
 
 ![img.png](https://github.com/haesleinhuepf/napari-plot-profile/raw/main/docs/napari-plot-profile-screencast.gif)
-
-## Usage
 
 * Open some images in [napari].
   

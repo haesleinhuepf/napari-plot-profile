@@ -295,7 +295,7 @@ class TopographicalVisualization(Enum):
     Points = partial(topographic_points)
     Surface = partial(topographic_surface)
 
-@register_dock_widget(menu="Visualization > Topographical view")
+@register_dock_widget(menu="Visualization > Topographical view (npp)")
 @magic_factory(step_size={"visible": True})
 def topographical_view(image: ImageData, visualize_as:TopographicalVisualization = TopographicalVisualization.Image,
                        step_size: int = 1) -> List[LayerDataTuple]:
