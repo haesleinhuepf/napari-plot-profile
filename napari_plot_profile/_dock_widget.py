@@ -1,5 +1,7 @@
 import time
 import warnings
+from enum import Enum
+from functools import partial
 
 from qtpy.QtWidgets import QSpacerItem, QSizePolicy
 from napari_plugin_engine import napari_hook_implementation
@@ -9,6 +11,12 @@ from qtpy.QtCore import Qt
 from magicgui.widgets import Table
 from napari._qt.qthreading import thread_worker
 from qtpy.QtCore import QTimer
+
+from magicgui import magic_factory
+from ._functions import topographic_image, topographic_points, topographic_surface
+from napari.types import ImageData, LayerDataTuple
+from typing import List
+
 
 import pyqtgraph as pg
 import numpy as np
@@ -282,7 +290,41 @@ def profile(layer, line, num_points : int = 256):
 def min_max(data):
     return data.min(), data.max()
 
+class TopographicalVisualization(Enum):
+    Image = partial(topographic_image)
+    Points = partial(topographic_points)
+    Surface = partial(topographic_surface)
+
+@register_dock_widget(menu="Visualization > Topographical view")
+@magic_factory(step_size={"visible": True})
+def topographical_view(image: ImageData, visualize_as:TopographicalVisualization = TopographicalVisualization.Image,
+                       step_size: int = 1) -> List[LayerDataTuple]:
+    """Return a 3D topographical view from a 2D image.
+
+    This function warps pixels intensities to heights and returns a 3D visualization as specified.
+
+    Parameters
+    ----------
+    image : 2D-array
+        Grayscale 2D input image; will be converted to int internally
+    visualize_as: TopographicalVisualization
+        Type of visualization: Image(s), Points or Surfaces
+    step_size : uint
+        Grid-size for the visualization
+
+    Returns
+    -------
+    napari layers : list of LayerDataTuple
+        napari layers displaying pixel intensities as heights.
+    """
+    image = np.asarray(image)
+    if not isinstance(image.dtype, int):
+        image = image.astype(int)
+
+    return visualize_as.value(image, step_size)
+
+
 @napari_hook_implementation
 def napari_experimental_provide_dock_widget():
     # you can return either a single widget, or a sequence of widgets
-    return [PlotProfile]
+    return [PlotProfile, topographical_view]
