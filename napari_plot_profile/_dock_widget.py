@@ -79,6 +79,10 @@ class PlotProfile(QWidget):
         btn_list_values = QPushButton("List values")
         btn_list_values.clicked.connect(self._list_values)
         self.layout().addWidget(btn_list_values)
+        
+        btn_activate_3d_drawing = QPushButton("Activate 3D Drawing")
+        btn_activate_3d_drawing.clicked.connect(self._activate_3d_drawing)
+        self.layout().addWidget(btn_activate_3d_drawing)
 
         verticalSpacer = QSpacerItem(20, 40, QSizePolicy.Minimum, QSizePolicy.Expanding)
         self.layout().addItem(verticalSpacer)
@@ -149,6 +153,25 @@ class PlotProfile(QWidget):
         first_selected_layer.properties = table
         from napari_skimage_regionprops import add_table
         add_table(first_selected_layer, self._viewer)
+        
+    def _activate_3d_drawing(self):
+        print('got here')
+        self._viewer.mouse_drag_callbacks.append(
+            self._on_3d_click)
+        
+    def _on_3d_click(self, viewer, event):
+        image_layer = self.selected_image_layers()[0]
+        shapes_layer = self._selected_shapes_layers()[0]
+        near_point, far_point = image_layer.get_ray_intersections(
+            event.position,
+            event.view_direction,
+            event.dims_displayed
+        )
+        if (near_point is not None) and (far_point is not None):
+            
+            line_data = [np.array([near_point, far_point])]
+            print(line_data)
+            shapes_layer.add_lines(line_data)
 
     def _get_current_line(self):
         line = None
@@ -223,6 +246,13 @@ class PlotProfile(QWidget):
 
     def selected_image_layers(self):
         return [layer for layer in self._viewer.layers if (isinstance(layer, napari.layers.Image) and layer.visible)]
+    def _selected_shapes_layers(self):
+        output =  [layer for layer in self._viewer.layers if (isinstance(layer, napari.layers.Shapes) and layer.visible)]
+        if len(output) == 0:
+            shapes_layer = self._viewer.add_shapes(ndim = 3)
+            output = [shapes_layer]
+        return output
+            
 
 class LayerLabelWidget(QWidget):
     def __init__(self, layer, text, color, gui):
