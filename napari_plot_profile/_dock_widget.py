@@ -155,7 +155,6 @@ class PlotProfile(QWidget):
         add_table(first_selected_layer, self._viewer)
         
     def _activate_3d_drawing(self):
-        print('got here')
         self._viewer.mouse_drag_callbacks.append(
             self._on_3d_click)
         
@@ -168,7 +167,6 @@ class PlotProfile(QWidget):
             event.dims_displayed
         )
         if (near_point is not None) and (far_point is not None):
-            
             line_data = [np.array([near_point, far_point])]
             print(line_data)
             shapes_layer.add_lines(line_data)
@@ -252,7 +250,10 @@ class PlotProfile(QWidget):
             shapes_layer = self._viewer.add_shapes(ndim = 3)
             output = [shapes_layer]
         return output
-            
+    
+    def hideEvent(self, event):
+        super().hideEvent(event)
+        self._viewer.mouse_drag_callbacks.remove(self._on_3d_click)
 
 class LayerLabelWidget(QWidget):
     def __init__(self, layer, text, color, gui):
