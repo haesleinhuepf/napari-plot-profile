@@ -169,7 +169,7 @@ class PlotProfile(QWidget):
         if (near_point is not None) and (far_point is not None):
             line_data = [np.array([near_point, far_point])]
             print(line_data)
-            shapes_layer.add_lines(line_data)
+            shapes_layer.add_lines(line_data, edge_color = 'yellow')
 
     def _get_current_line(self):
         line = None
