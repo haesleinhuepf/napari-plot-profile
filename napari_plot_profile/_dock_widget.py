@@ -5,7 +5,7 @@ from functools import partial
 
 from qtpy.QtWidgets import QSpacerItem, QSizePolicy
 from napari_plugin_engine import napari_hook_implementation
-from qtpy.QtWidgets import QWidget, QHBoxLayout, QVBoxLayout, QPushButton, QLabel, QSpinBox, QCheckBox
+from qtpy.QtWidgets import QWidget, QHBoxLayout, QVBoxLayout, QPushButton, QLabel, QSpinBox, QCheckBox, QListWidget, QListWidgetItem
 from qtpy.QtWidgets import QTableWidget, QTableWidgetItem, QWidget, QGridLayout, QPushButton, QFileDialog
 from qtpy.QtCore import Qt
 from magicgui.widgets import Table
@@ -32,12 +32,18 @@ class PlotProfile(QWidget):
 
         self._data = None
         self._former_line = None
+        self.shapes_metadata = {}
+        # self._line_opacities = []
 
         graph_container = QWidget()
 
         # histogram view
         self._graphics_widget = pg.GraphicsLayoutWidget()
         self._graphics_widget.setBackground(None)
+        
+        # List of lines Widget
+        self._list_of_lines_widget = QListWidget()
+        self._list_of_lines_widget.itemClicked.connect(self._on_item_clicked)
 
         #graph_container.setMaximumHeight(100)
         graph_container.setLayout(QHBoxLayout())
@@ -83,6 +89,8 @@ class PlotProfile(QWidget):
         btn_activate_3d_drawing = QPushButton("Activate 3D Drawing")
         btn_activate_3d_drawing.clicked.connect(self._activate_3d_drawing)
         self.layout().addWidget(btn_activate_3d_drawing)
+        
+        self.layout().addWidget(self._list_of_lines_widget)
 
         verticalSpacer = QSpacerItem(20, 40, QSizePolicy.Minimum, QSizePolicy.Expanding)
         self.layout().addItem(verticalSpacer)
@@ -168,8 +176,26 @@ class PlotProfile(QWidget):
         )
         if (near_point is not None) and (far_point is not None):
             line_data = [np.array([near_point, far_point])]
-            print(line_data)
+            # To do: each line with a different color (list of opacities would be great)
             shapes_layer.add_lines(line_data, edge_color = 'yellow')
+            # Add new item to QListWidget
+            new_item = QListWidgetItem()
+            # Gives item new text name
+            new_line_name = shapes_layer.shape_type[-1] + f" {len(shapes_layer.data)}"
+            new_item.setText(new_line_name)
+            # Store text to index dictionary as metadata
+            self.shapes_metadata[new_line_name] = len(shapes_layer.data)
+            shapes_layer.metadata = self.shapes_metadata
+            # Add item to QListWidget
+            self._list_of_lines_widget.addItem(new_item)
+
+    def _on_item_clicked(self, item):
+        shapes_layer = self._selected_shapes_layers()[0]
+        index = self._list_of_lines_widget.currentRow()
+        print(shapes_layer.data)
+        print(shapes_layer.edge_color)
+        shapes_layer.edge_color[index] = [1, 0, 0, 1]
+        # print(shapes_layer.metadata[item.text()])
 
     def _get_current_line(self):
         line = None
