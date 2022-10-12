@@ -33,8 +33,8 @@ class PlotProfile(QWidget):
 
         self._data = None
         self._former_line = None
-        self.shapes_features = {}
-        # self._line_opacities = []
+        shapes_layer = self._selected_shapes_layers()[0]
+        self.shapes_metadata = shapes_layer.metadata
 
         graph_container = QWidget()
 
@@ -88,9 +88,10 @@ class PlotProfile(QWidget):
         btn_list_values.clicked.connect(self._list_values)
         self.layout().addWidget(btn_list_values)
         
-        btn_activate_3d_drawing = QPushButton("Activate 3D Drawing")
-        btn_activate_3d_drawing.clicked.connect(self._activate_3d_drawing)
-        self.layout().addWidget(btn_activate_3d_drawing)
+        self.btn_activate_3d_drawing = QPushButton("Activate 3D Drawing")
+        self.btn_activate_3d_drawing.setCheckable(True)
+        self.btn_activate_3d_drawing.clicked.connect(self._activate_3d_drawing)
+        self.layout().addWidget(self.btn_activate_3d_drawing)
         
         self.layout().addWidget(self._list_of_lines_widget)
 
@@ -164,9 +165,13 @@ class PlotProfile(QWidget):
         from napari_skimage_regionprops import add_table
         add_table(first_selected_layer, self._viewer)
         
-    def _activate_3d_drawing(self):
-        self._viewer.mouse_drag_callbacks.append(
-            self._on_3d_click)
+    def _activate_3d_drawing(self, event):
+        if event:
+            self._viewer.mouse_drag_callbacks.append(
+                self._on_3d_click)
+        else:
+            if self._on_3d_click in self._viewer.mouse_drag_callbacks:
+                self._viewer.mouse_drag_callbacks.remove(self._on_3d_click)
         
     def _on_3d_click(self, viewer, event):
         image_layer = self.selected_image_layers()[0]
@@ -178,33 +183,37 @@ class PlotProfile(QWidget):
         )
         if (near_point is not None) and (far_point is not None):
             line_data = [np.array([near_point, far_point])]
-            # To do: each line with a different color (list of opacities would be great)
-            shapes_layer.add_lines(line_data, edge_color = 'yellow')
-            self._add_line_to_list_widget()
+            shapes_layer.add_lines(line_data, edge_color = '#777777ff')
+            line_name = shapes_layer.shape_type[-1] + f" {len(shapes_layer.data)}"
+            self._add_new_line_to_metadata(len(shapes_layer.data), line_name)
+            self._update_list_widget_with_metadata()
             
-
-    def _add_line_to_list_widget(self):
+    def _add_new_line_to_metadata(self, i, line_name):
         shapes_layer = self._selected_shapes_layers()[0]
-        # Add new item to QListWidget
-        new_item = QListWidgetItem()
         # Gives item new text name
-        new_line_name = shapes_layer.shape_type[-1] + f" {len(shapes_layer.data)}"
-        new_item.setText(new_line_name)
-        # Store text to index dictionary as features
-        self.shapes_features[len(shapes_layer.data)] = new_line_name
-        shapes_layer.features = pd.DataFrame(pd.DataFrame(
-            self.shapes_features.values(),
-            index = self.shapes_features.keys()),
-            columns = ['names'])
-        # Add item to QListWidget
-        self._list_of_lines_widget.addItem(new_item)
-
+        shapes_layer.metadata[i] = line_name
+    
+    def _get_list_widget_items(self):
+        items = [self._list_of_lines_widget.item(x)
+                 for x in range(self._list_of_lines_widget.count())]
+        return items
+    
+    def _update_list_widget_with_metadata(self):
+        shapes_layer = self._selected_shapes_layers()[0]
+        items = self._get_list_widget_items()
+        items_texts = [item.text() for item in items]
+        # Iterate over line names in metadata values
+        for name in list(shapes_layer.metadata.values()):
+            if name not in items_texts:
+                new_item = QListWidgetItem()
+                new_item.setText(name)
+                self._list_of_lines_widget.addItem(new_item)
 
     def _on_item_clicked(self, item):
         shapes_layer = self._selected_shapes_layers()[0]
         index = self._list_of_lines_widget.currentRow()
         shapes_layer.selected_data = {index}
-        edge_color = np.array(['yellow'] * len(shapes_layer.data))
+        edge_color = np.array(['#777777ff'] * len(shapes_layer.data))
         edge_color[index] = 'red'
         self.redraw(force_redraw=True)
         shapes_layer.edge_color = edge_color
@@ -233,9 +242,14 @@ class PlotProfile(QWidget):
             return
         shapes_layer = self._selected_shapes_layers()[0]
         shapes_layer_length = len(shapes_layer.data)
-        if shapes_layer_length > len(self.shapes_features):
-            self._add_line_to_list_widget()
-        
+        for i, shape_type in enumerate(shapes_layer.shape_type):
+            # to do: guarantee unique shape_type + number
+            # when deleting path and adding line for example, extra wrong names
+            # may be added to metadata
+            line_name = shape_type + f" {i+1}"
+            if line_name not in list(shapes_layer.metadata.values()):
+                self._add_new_line_to_metadata(i+1, line_name)
+        self._update_list_widget_with_metadata()
 
         if not force_redraw:
             if self._former_line is not None and np.array_equal(line, self._former_line):
@@ -295,7 +309,8 @@ class PlotProfile(QWidget):
     
     def hideEvent(self, event):
         super().hideEvent(event)
-        self._viewer.mouse_drag_callbacks.remove(self._on_3d_click)
+        if self._on_3d_click in self._viewer.mouse_drag_callbacks:
+            self._viewer.mouse_drag_callbacks.remove(self._on_3d_click)
 
 class LayerLabelWidget(QWidget):
     def __init__(self, layer, text, color, gui):
