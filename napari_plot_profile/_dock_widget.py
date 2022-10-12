@@ -19,6 +19,7 @@ from typing import List
 
 
 import pyqtgraph as pg
+import pandas as pd
 import numpy as np
 import napari
 from napari_tools_menu import register_dock_widget
@@ -32,7 +33,7 @@ class PlotProfile(QWidget):
 
         self._data = None
         self._former_line = None
-        self.shapes_metadata = {}
+        self.shapes_features = {}
         # self._line_opacities = []
 
         graph_container = QWidget()
@@ -44,6 +45,7 @@ class PlotProfile(QWidget):
         # List of lines Widget
         self._list_of_lines_widget = QListWidget()
         self._list_of_lines_widget.itemClicked.connect(self._on_item_clicked)
+        
 
         #graph_container.setMaximumHeight(100)
         graph_container.setLayout(QHBoxLayout())
@@ -178,24 +180,34 @@ class PlotProfile(QWidget):
             line_data = [np.array([near_point, far_point])]
             # To do: each line with a different color (list of opacities would be great)
             shapes_layer.add_lines(line_data, edge_color = 'yellow')
-            # Add new item to QListWidget
-            new_item = QListWidgetItem()
-            # Gives item new text name
-            new_line_name = shapes_layer.shape_type[-1] + f" {len(shapes_layer.data)}"
-            new_item.setText(new_line_name)
-            # Store text to index dictionary as metadata
-            self.shapes_metadata[new_line_name] = len(shapes_layer.data)
-            shapes_layer.metadata = self.shapes_metadata
-            # Add item to QListWidget
-            self._list_of_lines_widget.addItem(new_item)
+            self._add_line_to_list_widget()
+            
+
+    def _add_line_to_list_widget(self):
+        shapes_layer = self._selected_shapes_layers()[0]
+        # Add new item to QListWidget
+        new_item = QListWidgetItem()
+        # Gives item new text name
+        new_line_name = shapes_layer.shape_type[-1] + f" {len(shapes_layer.data)}"
+        new_item.setText(new_line_name)
+        # Store text to index dictionary as features
+        self.shapes_features[len(shapes_layer.data)] = new_line_name
+        shapes_layer.features = pd.DataFrame(pd.DataFrame(
+            self.shapes_features.values(),
+            index = self.shapes_features.keys()),
+            columns = ['names'])
+        # Add item to QListWidget
+        self._list_of_lines_widget.addItem(new_item)
+
 
     def _on_item_clicked(self, item):
         shapes_layer = self._selected_shapes_layers()[0]
         index = self._list_of_lines_widget.currentRow()
-        print(shapes_layer.data)
-        print(shapes_layer.edge_color)
-        shapes_layer.edge_color[index] = [1, 0, 0, 1]
-        # print(shapes_layer.metadata[item.text()])
+        shapes_layer.selected_data = {index}
+        edge_color = np.array(['yellow'] * len(shapes_layer.data))
+        edge_color[index] = 'red'
+        self.redraw(force_redraw=True)
+        shapes_layer.edge_color = edge_color
 
     def _get_current_line(self):
         line = None
@@ -215,11 +227,15 @@ class PlotProfile(QWidget):
     def redraw(self, force_redraw : bool = False):
 
         line = self._get_current_line()
-
+        
         if line is None:
             #self._reset_plot()
             return
-
+        shapes_layer = self._selected_shapes_layers()[0]
+        shapes_layer_length = len(shapes_layer.data)
+        if shapes_layer_length > len(self.shapes_features):
+            self._add_line_to_list_widget()
+        
 
         if not force_redraw:
             if self._former_line is not None and np.array_equal(line, self._former_line):
