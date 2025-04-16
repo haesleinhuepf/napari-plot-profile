@@ -31,6 +31,13 @@ Plot intensities along a line in [napari].
 
 To see how these steps can be done programmatically from python, check out the [demo notebook](https://github.com/haesleinhuepf/napari-plot-profile/blob/main/docs/demo.ipynb)
 
+## Working with RGB images
+
+When working with RGB images, you need to split them into three different layers first in napari.
+For this, right-click on the layer and select "Split RGB channels".
+
+![img.png](docs/split-channels.png)
+
 ## Create a Topographical View
 
 Create a 3D view of a 2D image by warping pixel intensities to heights using the menu `Tools > Visualization > Topographical view (npp)`. It can be displayed as a 3D image layer, a points cloud layer or a surface layer.
