@@ -54,6 +54,8 @@ You can install `napari-plot-profile` via [pip]:
 
     pip install napari-plot-profile
 
+Note: This plugin is not compatible with napari 0.6.0 and later.
+
 ## Contributing
 
 Contributions are very welcome. Tests can be run with [tox], please ensure
